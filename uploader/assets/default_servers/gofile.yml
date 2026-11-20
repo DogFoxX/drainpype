@@ -1,0 +1,136 @@
+"$schema": "../../../docs/server.schema.json"
+schema: 1
+id: gofile
+name: Gofile
+base_url: https://gofile.io
+fields:
+  - key: guest_session
+    type: capture_table
+    caption: Guest Session
+    help: Updates when at least one upload completes
+    column: 0
+    table_columns:
+      - caption: Guest Account Token
+        source: _guest_token
+      - caption: Folder ID
+        source: _captured_folder_id
+    export:
+      template: |-
+        Guest Account Token: {_guest_token}
+        Folder ID: {_captured_folder_id}
+      default_filename: Gofile-Guest-Tokens.txt
+    save_token:
+      source: _guest_token
+      to_key: api_key
+      caption: Save Token
+  - key: api_key
+    caption: API Token
+    column: 1
+    help: Optional (Leave blank for Guest uploads)
+    type: secret
+  - key: folder_id
+    caption: Folder ID
+    help:
+      Optional (Omitted and "Upload to same folder" enabled, will generate a new
+      folder in root)
+    column: 1
+    needs: api_key
+    type: text
+  - key: same_folder
+    caption: Upload to same folder
+    column: 1
+    needs_multiple: true
+    disabled_when_all:
+      - api_key
+      - folder_id
+    checked_when_all:
+      - api_key
+      - folder_id
+    type: checkbox
+request:
+  verb: POST
+  body: multipart
+  file_field: file
+  url:
+    - text: https://upload.gofile.io/uploadfile
+  form:
+    - field: folderId
+      text: "{folder_id}"
+      only_if:
+        - folder_id
+  headers:
+    - header: Authorization
+      text: Bearer {api_key}
+      only_if:
+        - api_key
+    - header: Authorization
+      text: Bearer {_guest_token}
+      only_if:
+        - _guest_token
+      unless:
+        - api_key
+  keepalive: 30
+response:
+  network_error_from: 500
+  upload_error_from: 400
+  fallback_url_pattern: https?://[^\s"'<>]+
+  results:
+    - at: data.downloadPage
+      url: "{value}"
+      name_at: data.name
+      ok_at: status
+      ok_equals: ok
+      capture:
+        guest_token: data.guestToken
+        parent_folder: data.parentFolder
+    - at: data.code
+      url: "{base_url}/d/{value|url}"
+      name_at: data.name
+      ok_at: status
+      ok_equals: ok
+      capture:
+        guest_token: data.guestToken
+        parent_folder: data.parentFolder
+    - at: data.id
+      url: "{base_url}/d/{value|url}"
+      name_at: data.name
+      ok_at: status
+      ok_equals: ok
+      capture:
+        guest_token: data.guestToken
+        parent_folder: data.parentFolder
+  error_at:
+    - data.message
+    - data.error
+    - message
+    - error
+    - status
+  error_map:
+    error-token: Unauthorized
+    error-rateLimit: Rate Limited
+    error-limits: Quota Exceeded
+    error-notFound: Not Found
+    error-notPremium: Not Premium
+    error-field: Invalid Field
+  status_errors:
+    "401": Unauthorized
+    "403": Unauthorized
+    "404": Not Found
+    "429": Rate Limited
+capture:
+  - from: guest_token
+    to: _guest_token
+    when_empty:
+      - api_key
+      - _guest_token
+  - from: parent_folder
+    to: _captured_folder_id
+    when_empty:
+      - folder_id
+      - _captured_folder_id
+  - from: parent_folder
+    to: folder_id
+    only_if:
+      - same_folder
+    when_empty:
+      - folder_id

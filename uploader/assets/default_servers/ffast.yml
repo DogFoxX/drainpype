@@ -1,0 +1,89 @@
+"$schema": "../../../docs/server.schema.json"
+schema: 1
+id: ffast
+name: fuckingfast.net
+base_url: https://fuckingfast.net
+fields:
+  - key: location
+    caption: Location
+    type: select
+    mandatory: false
+    choices_from:
+      url: https://fuckingfast.net/api/locations
+      timeout: 15
+      list_at:
+        - locations
+        - data
+        - items
+      value_keys:
+        - id
+        - location_id
+        - code
+        - value
+      caption_keys:
+        - name
+        - label
+        - title
+        - id
+    column: 0
+  - key: note
+    caption: Notes
+    type: textarea
+    mandatory: false
+    help: "(Optional: File notes)"
+    column: 0
+  - key: account_id
+    caption: Account ID
+    type: secret
+    mandatory: false
+    help: "(Optional: Leave empty for Anonymous upload)"
+    save_label: Save Account ID
+    column: 2
+  - key: directory_id
+    caption: Directory ID
+    type: text
+    mandatory: false
+    needs: account_id
+    help: "(Optional)"
+    column: 2
+request:
+  verb: PUT
+  body: raw
+  url:
+    - text: https://w.fuckingfast.net/
+    - text: "{directory_id|trim|url}/"
+      only_if:
+        - account_id
+        - directory_id
+    - text: "{filename|url}"
+  query:
+    - param: locationId
+      text: "{location|trim|url}"
+      only_if:
+        - location
+    - param: note
+      text: "{note|trim|b64|url}"
+      only_if:
+        - note
+  headers:
+    - header: Authorization
+      text: Bearer {account_id|trim}
+      only_if:
+        - account_id
+  keepalive: 30
+response:
+  network_error_from: 500
+  upload_error_from: 400
+  results:
+    - at: url
+      url: "{value}"
+    - at: link
+      url: "{value}"
+    - at: data.url
+      url: "{value}"
+    - at: id
+      url: https://fuckingfast.net/f/{value}
+  error_at:
+    - message
+    - error
+    - detail

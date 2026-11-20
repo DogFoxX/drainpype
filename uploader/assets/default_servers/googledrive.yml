@@ -1,0 +1,79 @@
+"$schema": "../../../docs/server.schema.json"
+schema: 1
+id: google_drive
+name: Google Drive
+base_url: https://drive.google.com
+auth:
+  type: oauth2
+  provider: google
+  scopes:
+    - https://www.googleapis.com/auth/drive.file
+  client_file: "../google_oauth_client.json"
+  pkce: true
+  token_key: oauth_token
+  credentials_key: oauth_credentials
+fields:
+  - key: note
+    type: notes
+    caption: Google Drive authorization
+    notes:
+      - "• DrainPype uses Google OAuth to upload files to your Google Drive."
+      - "• You sign in directly with Google; DrainPype never receives your Google password."
+      - "• DrainPype requests only the Google Drive permission shown on Google's authorization
+        screen."
+      - "• It does not request access to Gmail, Contacts, Calendar, or unrelated Google
+        data."
+    column: 0
+  - key: oauth_auth
+    caption: Authorize with Google
+    type: button
+    action:
+      type: oauth2
+      provider: google
+      scopes:
+        - https://www.googleapis.com/auth/drive.file
+    column: 0
+  - key: folder_id
+    caption: Folder ID
+    type: text
+    mandatory: false
+    column: 1
+    help: "(Optional: Drive folder ID)"
+  - key: same_folder
+    caption: Upload to same folder
+    needs_multiple: true
+    disabled_when_all:
+      - folder_id
+    checked_when_all:
+      - folder_id
+    type: checkbox
+    column: 1
+request:
+  verb: POST
+  body: multipart_related
+  url:
+    - text: https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink
+  headers:
+    - header: Authorization
+      text: Bearer {oauth_token|trim}
+  metadata:
+    - text: '{"name":"{filename|json}","parents":["{folder_id|trim|json}"]}'
+      only_if:
+        - folder_id
+    - text: '{"name":"{filename|json}"}'
+      unless:
+        - folder_id
+  keepalive: 30
+response:
+  network_error_from: 500
+  upload_error_from: 400
+  results:
+    - at: webViewLink
+      url: "{value}"
+      name_at: name
+    - at: id
+      url: https://drive.google.com/file/d/{value}/view
+      name_at: name
+  error_at:
+    - error.message
+    - message

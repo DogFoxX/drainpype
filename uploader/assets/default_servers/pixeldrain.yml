@@ -1,0 +1,35 @@
+"$schema": "../../../docs/server.schema.json"
+schema: 1
+id: pixeldrain
+name: Pixeldrain
+base_url: https://pixeldrain.com
+fields:
+  - key: api_key
+    caption: API Key
+    type: secret
+    mandatory: true
+    help: "(Required)"
+    save_label: Save API key
+request:
+  verb: PUT
+  url:
+    - text: https://pixeldrain.com/api/file/{filename|trim|url}
+  headers:
+    - header: Authorization
+      text: Basic {api_key|trim|basic_pass}
+  keepalive: 30
+response:
+  network_error_from: 500
+  upload_error_from: 400
+  fallback_url_pattern: https?://pixeldrain\.com/u/[A-Za-z0-9_-]+
+  results:
+    - at: id
+      url: https://pixeldrain.com/u/{value}
+  error_at:
+    - message
+    - value
+  error_map:
+    file_size_exceeded: File size limit exceeded
+    missing_api_key: Invalid or missing API key
+    invalid_api_key: Invalid or missing API key
+    unauthorized: Invalid or missing API key

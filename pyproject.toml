@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drainpype"
+description = "A small, server-agnostic file uploader"
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["version"]
+dependencies = ["PySide6>=6.6"]
+
+[project.optional-dependencies]
+yaml = ["pyyaml>=6"]
+
+[project.scripts]
+drainpype = "uploader.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["uploader*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "uploader.__version__.__version__"}
+
+[tool.setuptools.package-data]
+uploader = ["assets/*.json", "assets/default_servers/*.json", "assets/icon.ico", "assets/fonts/*.otf", "assets/fonts/*.ttf"]

@@ -1,0 +1,720 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/DogFoxX/drainpipe/master/docs/server.schema.json",
+  "title": "DrainPype Server Definition",
+  "description": "Declarative server definition schema for DrainPype.",
+  "type": "object",
+  "required": ["schema", "id", "request"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "base_url": {
+      "type": "string"
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/field"
+      }
+    },
+    "prepare": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/prepareStep"
+      }
+    },
+    "request": {
+      "$ref": "#/definitions/requestSpec"
+    },
+    "response": {
+      "$ref": "#/definitions/responseSpec"
+    },
+    "capture": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/captureRule"
+      }
+    },
+    "auth": {
+      "$ref": "#/definitions/authSpec"
+    }
+  },
+  "definitions": {
+    "urlPart": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "only_if": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unless": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "queryPart": {
+      "type": "object",
+      "required": ["param", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "param": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "only_if": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unless": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "headerPart": {
+      "type": "object",
+      "required": ["header", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "header": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "only_if": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unless": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "formPart": {
+      "type": "object",
+      "required": ["field", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "only_if": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unless": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "choiceItem": {
+      "type": "object",
+      "required": ["value", "caption"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "caption": {
+          "type": "string"
+        }
+      }
+    },
+    "choiceSource": {
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/headerPart"
+          }
+        },
+        "timeout": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "list_at": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "value_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "caption_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reload_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "captureColumn": {
+      "type": "object",
+      "required": ["caption", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "caption": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "captureExport": {
+      "type": "object",
+      "required": ["template"],
+      "additionalProperties": false,
+      "properties": {
+        "template": {
+          "type": "string"
+        },
+        "default_filename": {
+          "type": "string"
+        }
+      }
+    },
+    "captureSaveToken": {
+      "type": "object",
+      "required": ["source", "to_key"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "to_key": {
+          "type": "string"
+        },
+        "caption": {
+          "type": "string"
+        }
+      }
+    },
+    "buttonAction": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["open_url", "copy", "clear", "request", "oauth2"]
+        },
+        "url": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reload_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "verb": {
+          "type": "string"
+        },
+        "query": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/queryPart"
+          }
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/headerPart"
+          }
+        },
+        "json_body": {
+          "type": "string"
+        },
+        "form": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/formPart"
+          }
+        },
+        "extract": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "message": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": ["key"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_]+$",
+          "not": {
+            "enum": [
+              "value",
+              "short_date",
+              "base_url",
+              "filename",
+              "stem",
+              "ext",
+              "mime",
+              "size"
+            ]
+          }
+        },
+        "caption": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "text",
+            "textarea",
+            "notes",
+            "secret",
+            "select",
+            "checkbox",
+            "capture_table",
+            "button",
+            "urlButton"
+          ]
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "help": {
+          "type": "string"
+        },
+        "save_label": {
+          "type": "string"
+        },
+        "mandatory": {
+          "type": "boolean"
+        },
+        "needs": {
+          "type": "string"
+        },
+        "needs_multiple": {
+          "type": "boolean"
+        },
+        "disabled_when_all": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "checked_when_all": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/choiceItem"
+          }
+        },
+        "choices_from": {
+          "$ref": "#/definitions/choiceSource"
+        },
+        "table_columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/captureColumn"
+          }
+        },
+        "export": {
+          "$ref": "#/definitions/captureExport"
+        },
+        "save_token": {
+          "$ref": "#/definitions/captureSaveToken"
+        },
+        "url": {
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/definitions/buttonAction"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "notes"
+              }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "required": ["notes"]
+          }
+        }
+      ]
+    },
+    "prepareStep": {
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": false,
+      "properties": {
+        "verb": {
+          "type": "string"
+        },
+        "url": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/urlPart"
+          }
+        },
+        "query": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/queryPart"
+          }
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/headerPart"
+          }
+        },
+        "json_body": {
+          "type": "string"
+        },
+        "only_if": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unless": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "when_empty": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extract": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "requestSpec": {
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": false,
+      "properties": {
+        "verb": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string",
+          "enum": ["raw", "multipart", "multipart_related"]
+        },
+        "file_field": {
+          "type": "string"
+        },
+        "mime": {
+          "type": "string"
+        },
+        "url": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/urlPart"
+          }
+        },
+        "query": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/queryPart"
+          }
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/headerPart"
+          }
+        },
+        "form": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/formPart"
+          }
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/urlPart"
+          }
+        },
+        "keepalive": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "resultRule": {
+      "type": "object",
+      "required": ["at", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "name_at": {
+          "type": "string"
+        },
+        "starts_with": {
+          "type": "string"
+        },
+        "ok_at": {
+          "type": "string"
+        },
+        "ok_equals": {
+          "type": "string"
+        },
+        "capture": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responseSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "network_error_from": {
+          "type": "integer",
+          "minimum": 100
+        },
+        "upload_error_from": {
+          "type": "integer",
+          "minimum": 100
+        },
+        "fallback_url_pattern": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/resultRule"
+          }
+        },
+        "error_at": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "error_map": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "status_errors": {
+          "type": "object",
+          "patternProperties": {
+            "^[0-9]{3}$": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "captureRule": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "only_if": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "when_empty": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "authSpec": {
+      "type": "object",
+      "required": ["type", "provider"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "oauth2"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OAuth 2.0 provider identifier (e.g. 'google', 'dropbox', 'onedrive', 'github', or any custom provider)."
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "auth_uri": {
+          "type": "string"
+        },
+        "token_uri": {
+          "type": "string"
+        },
+        "revoke_uri": {
+          "type": "string"
+        },
+        "client_id": {
+          "type": "string"
+        },
+        "client_secret": {
+          "type": "string"
+        },
+        "client_file": {
+          "type": "string"
+        },
+        "auth_params": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "redirect_port": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "redirect_path": {
+          "type": "string"
+        },
+        "pkce": {
+          "type": "boolean"
+        },
+        "token_key": {
+          "type": "string"
+        },
+        "credentials_key": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
