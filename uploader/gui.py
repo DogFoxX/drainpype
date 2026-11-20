@@ -64,7 +64,7 @@ ICONS = {
 }
 
 COLUMNS = ["#", "File Name", "Server", "Status", "Size", "Uploaded", "Progress", "Up Speed", "URL", "ETA"]
-C_NUMBER, C_STATUS, C_NAME, C_SERVER, C_SIZE, C_SENT, C_PROGRESS, C_SPEED, C_URL, C_ETA = range(10)
+C_NUMBER, C_NAME, C_SERVER, C_STATUS, C_SIZE, C_SENT, C_PROGRESS, C_SPEED, C_URL, C_ETA = range(10)
 COLUMN_WIDTHS = [50, 220, 140, 100, 100, 100, 170, 100, 200, 100]
 SORT_ROLE = int(Qt.ItemDataRole.UserRole) + 10
 KEYS_COLUMN_WIDTHS = [200, 440]
@@ -2249,6 +2249,11 @@ class MainWindow(QMainWindow):
             for col, item in enumerate(items):
                 if item is not None:
                     table.setItem(row, col, item)
+            # The URL is rendered by the selectable QLineEdit cell widget below.
+            # Keep the underlying item blank so Qt does not paint the URL twice.
+            url_item = table.item(row, C_URL)
+            if url_item is not None:
+                url_item.setText("")
             url_edit = self._make_url_widget()
             url_edit.setText(job.url or job.error)
             url_edit.setCursorPosition(0)
@@ -2414,7 +2419,13 @@ class MainWindow(QMainWindow):
 
         url_edit = self.table.cellWidget(row, C_URL)
         display_text = job.url or job.error
-        self.table.item(row, C_URL).setText(display_text)
+        # The selectable cell widget owns the visible URL text; the backing item
+        # must stay blank to avoid drawing the same text underneath it.
+        url_item = self.table.item(row, C_URL)
+        if url_item is not None:
+            url_item.setData(SORT_ROLE, display_text.casefold())
+            if url_item.text():
+                url_item.setText("")
         if isinstance(url_edit, QLineEdit):
             if url_edit.text() != display_text:
                 url_edit.setText(display_text)
