@@ -14,7 +14,7 @@ jobs:
       version: ${{ steps.get_ver.outputs.version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Extract version from uploader/__version__.py
         id: get_ver
@@ -33,10 +33,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -80,11 +80,14 @@ jobs:
       - name: Package Windows zip
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path release-assets\drainpype | Out-Null
-          Compress-Archive -Path "dist\drainpype.exe" -DestinationPath "release-assets\drainpype\windows.zip" -Force
+          New-Item -ItemType Directory -Force -Path release-assets | Out-Null
+          Compress-Archive -Path "dist\drainpype.exe" -DestinationPath "release-assets\drainpype-windows.zip" -Force
+          if (-not (Test-Path "release-assets\drainpype-windows.zip")) {
+            throw "Windows release archive was not created."
+          }
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: windows-release-zip
           path: release-assets/drainpype-windows.zip
@@ -95,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Qt/PySide6 system dependencies
         run: |
@@ -103,7 +106,7 @@ jobs:
           sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0 libdbus-1-3 fontconfig
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -125,7 +128,7 @@ jobs:
           zip -j "release-assets/drainpype-linux.zip" "dist/drainpype"
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: linux-release-zip
           path: release-assets/drainpype-linux.zip
@@ -136,13 +139,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Verify release assets
+        run: |
+          test -f artifacts/drainpype-windows.zip
+          test -f artifacts/drainpype-linux.zip
 
       - name: Create draft release
         env:
