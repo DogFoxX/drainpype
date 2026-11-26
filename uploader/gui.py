@@ -2095,7 +2095,8 @@ class MainWindow(QMainWindow):
             if row is not None and row < self.table.rowCount():
                 eta_item = self.table.item(row, C_ETA)
                 if eta_item is not None:
-                    eta_item.setText(human_eta(job.eta))
+                    eta_text = "\u221e" if job.state is State.UPLOADING and job.speed <= 0 else human_eta(job.eta)
+                    eta_item.setText(eta_text)
                     eta_item.setData(SORT_ROLE, job.eta)
         if was_sorting:
             self.table.setSortingEnabled(True)
@@ -2438,7 +2439,8 @@ class MainWindow(QMainWindow):
             )
 
         eta_item = self.table.item(row, C_ETA)
-        eta_item.setText(human_eta(job.eta))
+        eta_text = "\u221e" if job.state is State.UPLOADING and job.speed <= 0 else human_eta(job.eta)
+        eta_item.setText(eta_text)
         eta_item.setData(SORT_ROLE, job.eta)
 
         if job.state is State.DONE and job.captured:

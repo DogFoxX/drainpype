@@ -12,6 +12,7 @@ cycle from scratch. Progress updates are emitted every 100 ms (``EMIT_INTERVAL``
 from __future__ import annotations
 
 import itertools
+import os
 import re
 import shutil
 import subprocess
@@ -46,6 +47,18 @@ EMIT_INTERVAL = 0.1  # 100 ms progress updates per job
 SPEED_WINDOW = 5.0  # seconds averaged for the speed readout
 SPEED_SMOOTHING = 0.25
 _CURL_SIZE_RE = re.compile(r"^(\d+(?:\.\d+)?)([KMGTP]?)$", re.IGNORECASE)
+
+
+def _shares_new_gofile_folder(server: Server, values: dict[str, Any]) -> bool:
+    same_folder = values.get("same_folder")
+    enabled = same_folder is True or str(same_folder).strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+    return (
+        server.id == "gofile"
+        and enabled
+        and not str(values.get("folder_id", "")).strip()
+    )
 
 
 def _curl_size_bytes(value: str) -> float | None:
@@ -183,6 +196,7 @@ class Uploader:
         self._running_jobs: list[Job] = []
         self._active_server: Server | None = None
         self._active_values: dict[str, Any] = {}
+        self._active_share_gofile_folder = False
 
     @property
     def max_uploads(self) -> int:
@@ -326,11 +340,19 @@ class Uploader:
                 and self._active_server is not None
             )
             if running:
+                if _shares_new_gofile_folder(server, values):
+                    self._active_share_gofile_folder = True
                 for job in candidates:
                     if job not in self._active_queue:
                         job.server = server
                         job.server_name = server.name
                         job.server_values = dict(values)
+                        if (
+                            self._active_share_gofile_folder
+                            and not str(job.server_values.get("folder_id", "")).strip()
+                            and str(self._active_values.get("folder_id", "")).strip()
+                        ):
+                            job.server_values["folder_id"] = self._active_values["folder_id"]
                         self._set(
                             job,
                             State.WAITING,
@@ -352,6 +374,7 @@ class Uploader:
             self._stop.clear()
             self._active_server = server
             self._active_values = dict(values)
+            self._active_share_gofile_folder = _shares_new_gofile_folder(server, values)
             self._active_queue = []
             for job in candidates:
                 job.server = server
@@ -520,7 +543,8 @@ class Uploader:
                 while (
                     not self._stop.is_set()
                     and self._has_pending_work_locked()
-                    and self._active_workers >= self._max_uploads
+                    and self._active_workers
+                    >= (1 if self._active_share_gofile_folder else self._max_uploads)
                 ):
                     self._queue_cond.wait(timeout=0.15)
 
@@ -554,6 +578,7 @@ class Uploader:
                     self._set(job, State.READY, sent=0, speed=0.0, eta_seconds=None, eta_updated=0.0)
             self._active_queue.clear()
             self._active_server = None
+            self._active_share_gofile_folder = False
             self._queue_cond.notify_all()
 
     def _worker(
@@ -606,8 +631,19 @@ class Uploader:
 
             self._set(job, State.UPLOADING, sent=0, speed=0.0, eta_seconds=None, eta_updated=0.0)
             parsed = self._transfer(curl_bin, job, server, request)
-            with self._lock:
+            with self._queue_cond:
                 applied = apply_captures(server, values, parsed)
+                folder_id = str(applied.get("folder_id", "")).strip()
+                if folder_id and self._active_share_gofile_folder and server.id == "gofile":
+                    self._active_values["folder_id"] = folder_id
+                    for queued in self._active_queue:
+                        if (
+                            queued is not job
+                            and queued.server is not None
+                            and queued.server.id == "gofile"
+                            and _shares_new_gofile_folder(queued.server, queued.server_values)
+                        ):
+                            queued.server_values["folder_id"] = folder_id
                 captured_snapshot = {
                     k: str(v).strip()
                     for k, v in applied.items()
@@ -765,9 +801,10 @@ class Uploader:
             """Read curl's transfer counters; stdin writes only measure pipe buffering."""
             nonlocal bytes_sent
             assert proc.stderr is not None
+            stderr_fd = proc.stderr.fileno()
             pending = ""
             while True:
-                data = proc.stderr.read1(4096)
+                data = os.read(stderr_fd, 4096)
                 if not data:
                     break
                 pending += data.decode("utf-8", errors="replace")

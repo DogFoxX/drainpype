@@ -75,14 +75,8 @@ response:
   network_error_from: 500
   upload_error_from: 400
   results:
-    - at: url
-      url: "{value}"
-    - at: link
-      url: "{value}"
-    - at: data.url
-      url: "{value}"
-    - at: id
-      url: https://fuckingfast.net/f/{value}
+    - at: data.id
+      url: https://fuckingfast.net/{value}
   error_at:
     - message
     - error
